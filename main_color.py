@@ -7,7 +7,7 @@
 from kernelized_sorting_color import KS
 from utils import lab
 import matplotlib.pylab as mp
-import Image
+from PIL import Image
 import numpy
 import pdb
 ino = 16
@@ -25,8 +25,8 @@ for i in xrange(ino):
         im = Image.open(fname)
         aim = numpy.asarray(im)
         [M,N,L] = aim.shape
-        mno = numpy.fix(M/psize)
-        nno = numpy.fix(N/psize)
+        mno = int(M/psize)
+        nno = int(N/psize)
         aim = aim[0:psize*mno:mno,0:psize*nno:nno,:]
         data.append(aim.flatten())
         daim = numpy.double(aim)/255.0

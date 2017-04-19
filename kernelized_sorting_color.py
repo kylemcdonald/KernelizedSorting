@@ -6,6 +6,7 @@ import numpy as np
 from vector import CGaussKernel,CLinearKernel,CRBFKernel
 from numpy.random import randn,rand
 import hungarian #,LAPJV # LAP solvers
+import lapjv
 import pdb
 
 def KS(X_1,X_2):
@@ -70,9 +71,10 @@ def KS(X_1,X_2):
         # assuming it is a finite cost problem, thus 
         # all the elements are substracted from the max value of the whole matrix
         cost_matrix = -grad
-        starttime = time.clock()             
-        #indexes = LAPJV.lap(cost_matrix)[1]
-        indexes = hungarian.hungarian(cost_matrix)[0]
+        starttime = time.clock()    
+        print 'solving cost_matrix with shape {}'.format(cost_matrix.shape)         
+        # indexes = lapjv.lapjv(cost_matrix)[1]
+        indexes = hungarian.lap(cost_matrix)[0]
         indexes = numpy.array(indexes)
         
         stoptime = time.clock()
