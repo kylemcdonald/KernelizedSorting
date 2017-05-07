@@ -18,8 +18,8 @@ iname = 'images/img'
 imgdata = []
 data = []
 counter = 0
-for i in xrange(ino):
-    for j in xrange(jno):
+for i in range(ino):
+    for j in range(jno):
         counter = counter + 1
         fname = iname + str(counter) + '.jpg'
         im = Image.open(fname)
@@ -47,9 +47,10 @@ imgdata_sorted = data[i_sorting,]
 irange = range(0,psize*ino,psize)
 jrange = range(0,psize*jno,psize)
 patching = numpy.zeros((ino*psize, jno*psize, 3))
-for i in xrange(ino):
-    for j in xrange(jno):
+for i in range(ino):
+    for j in range(jno):
         patching[irange[i]:irange[i]+psize,jrange[j]:jrange[j]+psize,:] = numpy.reshape(imgdata_sorted[(i)*jno+j,], [psize,psize,3]);
 
 im = Image.fromarray(patching.astype(numpy.uint8))
-im.show()
+# im.show()
+im.save("output_color.png")

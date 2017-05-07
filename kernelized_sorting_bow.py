@@ -1,5 +1,4 @@
 import warnings
-import exceptions
 import sys
 import matplotlib.pylab as mp
 import time
@@ -7,7 +6,8 @@ import numpy
 import numpy as np
 from vector import CGaussKernel,CLinearKernel,CRBFKernel
 from numpy.random import randn,rand
-import hungarian #,LAPJV # LAP solvers
+# import hungarian #,LAPJV # LAP solvers
+import lapjv
 import pdb
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -20,7 +20,7 @@ def KS(X_1,X_2):
     bases = numpy.eye(n_obs) 
     # normalization of data
     l2norm = numpy.zeros((n_obs,1))
-    for i in xrange(n_obs):
+    for i in range(n_obs):
         l2norm[i] = numpy.sum(X_1[i,])
     new_X_1 = X_1/l2norm
     
@@ -33,54 +33,54 @@ def KS(X_1,X_2):
     L = kernel_L.Dot(X_2,X_2) # should use incomplete cholesky instead ...
     # kernel for data
     tK = numpy.zeros((n_obs,n_obs))
-    for i in xrange(n_obs):
-        for j in xrange(i,n_obs):
+    for i in range(n_obs):
+        for j in range(i,n_obs):
             temp = ((new_X_1[i,:]-new_X_1[j,:])**2)/(new_X_1[i,:]+new_X_1[j,:])
             inan = numpy.isnan(temp)
             temp[inan] = 0.0
             tK[i,j] = tK[j,i] = numpy.sum(temp)*0.5
     mdisK = numpy.median(numpy.median(tK))
     K = numpy.zeros((n_obs,n_obs))
-    for i in xrange(n_obs):
-        for j in xrange (i,n_obs):
+    for i in range(n_obs):
+        for j in range (i,n_obs):
             temp = ((new_X_1[i,:]-new_X_1[j,:])**2)/(new_X_1[i,:]+new_X_1[j,:])
             inan = numpy.isnan(temp)
             temp[inan] = 0.0
             K[i,j] = K [j,i] = numpy.exp(-1.0*omegas/mdisK*numpy.sum(temp)*0.5) #chi-square kernel
     
     stoptime = time.clock()
-    print 'computing kernel matrices (K and L) takes %f seconds '% (stoptime-starttime)   
+    print('computing kernel matrices (K and L) takes %f seconds '% (stoptime-starttime)   )
         
-    print 'original objective function : '
+    print('original objective function : ')
     H = numpy.eye(n_obs) - numpy.ones(n_obs)/n_obs
-    print numpy.trace(numpy.dot(numpy.dot(numpy.dot(H,K),H),L))      
+    print(numpy.trace(numpy.dot(numpy.dot(numpy.dot(H,K),H),L))      )
     
     # initializing the permutation matrix
     if (cmp(init_type,'random') == 0):
-        print 'random initialization is being used ... \n'
+        print('random initialization is being used ... \n')
         PI_0 = init_random(n_obs)
     elif (cmp(init_type,'eig') == 0):
-        print 'sorted eigenvector initialization is being used ... \n'
+        print('sorted eigenvector initialization is being used ... \n')
         PI_0 = init_eig(K,L,n_obs)
     else:
-        print 'wrong initialization type ... '
+        print('wrong initialization type ... ')
 
     # centering of kernel matrices    
     H = numpy.eye(n_obs) - numpy.ones(n_obs)/n_obs
     K = numpy.dot(H,numpy.dot(K,H))
     L = numpy.dot(H,numpy.dot(L,H))
 
-    print 'initial objective: '
-    print numpy.trace(numpy.dot(numpy.dot(numpy.dot(PI_0,K),PI_0.T),L))      
+    print('initial objective: ')
+    print(numpy.trace(numpy.dot(numpy.dot(numpy.dot(PI_0,K),PI_0.T),L))      )
 
     # iterative linear assignment solution
     PI_t = numpy.zeros((n_obs,n_obs))
-    for i in xrange(n_iter):
-        print 'iteration : ',i
+    for i in range(n_iter):
+        print('iteration : ',i)
         starttime = time.clock()        
         grad = compute_gradient(K,L,PI_0) # L * P_0 * K
         stoptime = time.clock()
-        print 'computing gradient takes %f seconds '% (stoptime-starttime)
+        print('computing gradient takes %f seconds '% (stoptime-starttime))
         
         # convert grad (profit matrix) to cost matrix
         # assuming it is a finite cost problem, thus 
@@ -88,11 +88,12 @@ def KS(X_1,X_2):
         cost_matrix = -grad
         starttime = time.clock()             
         #indexes = LAPJV.lap(cost_matrix)[1]
-        indexes = hungarian.hungarian(cost_matrix)[0]
+        # indexes = hungarian.hungarian(cost_matrix)[0]
+        indexes = lapjv.lapjv(cost_matrix)[0]
         indexes = numpy.array(indexes)
         
         stoptime = time.clock()
-        print 'lap solver takes %f seconds '% (stoptime-starttime)
+        print('lap solver takes %f seconds '% (stoptime-starttime))
         
         PI_t = numpy.eye(n_obs)
         PI_t = PI_t[indexes,]
@@ -104,8 +105,8 @@ def KS(X_1,X_2):
 
         # computing the objective function
         obj_funct = numpy.trace(numpy.dot(numpy.dot(numpy.dot(PI_t,K),PI_t.T),L))
-        print 'objective function value : ',obj_funct
-        print '\n'
+        print('objective function value : ',obj_funct)
+        print('\n')
 
         # another termination criteria
         if (numpy.trace(numpy.dot(numpy.dot(numpy.dot(PI,K),PI.T),L)) - numpy.trace(numpy.dot(numpy.dot(numpy.dot(PI_0,K),PI_0.T),L)) <= 1e-5):
